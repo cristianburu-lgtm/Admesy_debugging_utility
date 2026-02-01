@@ -118,7 +118,7 @@ class MainUI(QMainWindow):
 
 
         ##############################
-        #     TAB HERA Signals/Slots    #
+        #  TAB HERA Signals/Slots    #
         ##############################
 
         self.pushButton_connect_hera.clicked.connect (self.toggle_connect_disconnect_hera)
@@ -133,6 +133,8 @@ class MainUI(QMainWindow):
         # Measure buttons
         self.pushButton_hera_measure_spectrum.clicked.connect (self.hera_measure_spectrum)
         self.pushButton_hera_get_wavelengths.clicked.connect (self.hera_get_wavelengths)
+        self.pushButton_hera_measure_Yxy.clicked.connect (self.hera_measure_Yxy)
+        self.pushButton_hera_measure_XYZ.clicked.connect (self.hera_measure_XYZ)
         
 
 
@@ -416,7 +418,10 @@ class MainUI(QMainWindow):
             self.pushButton_connect.setChecked (False)
             self.pushButton_connect.setText ("CONNECT")
             self.pushButton_connect.setStyleSheet ("QPushButton {background-color:lightgreen}")
-            self.statusbar.showMessage (f"Admesy device 0x{device_string[-4:]} not supported!")
+            if device_string == "0X1020":
+                self.statusbar.showMessage (f"HERA 01 (0x1020) not supported on this tab!", 10000)
+            else:
+                self.statusbar.showMessage (f"Admesy device 0x{device_string[-4:]} not supported!", 10000)
             return
         
         print (f"Device identified as PCM2X is {my_pcm2x}")
@@ -537,10 +542,10 @@ class MainUI(QMainWindow):
         
         hera_found = False
         for device_spectro in list_of_devices:
-            # Identify PCM2X
+            # Identify HERA
             device_string = device_spectro.split("::")[2].upper()
             if  device_string == "0X1020":
-                spectro_type = "HERA"
+                spectro_type = "HERA 01"
                 my_spectro = device_spectro
                 hera_found = True
         
@@ -550,7 +555,7 @@ class MainUI(QMainWindow):
             self.pushButton_connect_hera.setChecked (False)
             self.pushButton_connect_hera.setText ("CONNECT")
             self.pushButton_connect_hera.setStyleSheet ("QPushButton {background-color:lightgreen}")
-            self.statusbar.showMessage (f"Admesy device 0x{device_string[-4:]} not supported!")
+            self.statusbar.showMessage (f"Admesy device 0x{device_string[-4:]} not supported!", 10000)
             return
         
         print (f"Hera CONNECT: Device identified as HERA is {my_spectro}")
@@ -946,6 +951,7 @@ class MainUI(QMainWindow):
         error_read = py_usbtmc_read (ptr_handle_spectro, read_data, bytecount, timeout_ms)
         adjmin_read = int (read_data.value.decode("utf-8")[:error_read])
         self.lineEdit_hera_adjmin.setText (str(adjmin_read))
+        self.lineEdit_hera_adjmin_2.setText (str(adjmin_read))
 
         # Read from device Freq from EEPROM
         command_py = ":EEPROM:CONFigure:AUTO:FREQ?\n"
@@ -957,6 +963,7 @@ class MainUI(QMainWindow):
         freq_error_read = py_usbtmc_read (ptr_handle_spectro, read_data, bytecount, timeout_ms)
         hera_freq_read = int (read_data.value.decode("utf-8")[:error_read])
         self.lineEdit_hera_freq.setText (f"{hera_freq_read}")
+        self.lineEdit_hera_freq_2.setText (f"{hera_freq_read}")
 
         # Read from device Max Int. Time from EEPROM
         command_py = ":EEPROM:CONFigure:AUTO:MAXINT?\n"
@@ -1425,6 +1432,74 @@ class MainUI(QMainWindow):
         self.measure_arparms("from_measure_all")
         self.function_result_to_statusbar (command_py, error_write, "")
         self.colorimeter_reload_parameters()
+
+    def hera_measure_Yxy (self):
+        # Measure Yxy - HERA
+        command_py = ":MEASure:Yxy\n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_spectro, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        bytecount = 4096
+        read_data = ctypes.create_string_buffer (bytecount)
+        error_read = py_usbtmc_read (ptr_handle_spectro, read_data, bytecount, timeout_ms)
+        measure_all_result = read_data.value.decode("utf-8")[:error_read].strip()
+        print (f":MEASure:Yxy result is -{measure_all_result}-")
+
+
+        self.lineEdit_hera_measure_Yxy_Y.setText(str(float (measure_all_result.split(",")[0])))
+        self.lineEdit_hera_measure_Yxy_x.setText(str(float (measure_all_result.split(",")[1])))
+        self.lineEdit_hera_measure_Yxy_y.setText(str(float (measure_all_result.split(",")[2])))
+        
+        if int (measure_all_result.split(",")[3]):
+            self.lineEdit_hera_measure_Yxy_clip.setText("Yes!!!")
+            self.lineEdit_hera_measure_Yxy_clip.setStyleSheet ("QLineEdit {background-color:lightcoral}")
+        else:
+            self.lineEdit_hera_measure_Yxy_clip.setText("No")
+            self.lineEdit_hera_measure_Yxy_clip.setStyleSheet ("")
+        if int (measure_all_result.split(",")[4]):
+            self.lineEdit_hera_measure_Yxy_noise.setText("Yes!!!")
+            self.lineEdit_hera_measure_Yxy_noise.setStyleSheet ("QLineEdit {background-color:lightcoral}")
+        else:
+            self.lineEdit_hera_measure_Yxy_noise.setText("No")
+            self.lineEdit_hera_measure_Yxy_noise.setStyleSheet ("")
+
+        self.function_result_to_statusbar (command_py, error_write, "")
+        self.hera_reload_parameters()
+
+    def hera_measure_XYZ (self):
+        # Measure XYZ - HERA
+        command_py = ":MEASure:XYZ\n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_spectro, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        bytecount = 4096
+        read_data = ctypes.create_string_buffer (bytecount)
+        error_read = py_usbtmc_read (ptr_handle_spectro, read_data, bytecount, timeout_ms)
+        measure_all_result = read_data.value.decode("utf-8")[:error_read].strip()
+        print (f":MEASure:XYZ result is -{measure_all_result}-")
+
+
+        self.lineEdit_hera_measure_XYZ_X.setText(str(float (measure_all_result.split(",")[0])))
+        self.lineEdit_hera_measure_XYZ_Y.setText(str(float (measure_all_result.split(",")[1])))
+        self.lineEdit_hera_measure_XYZ_Z.setText(str(float (measure_all_result.split(",")[2])))
+        
+        if int (measure_all_result.split(",")[3]):
+            self.lineEdit_hera_measure_XYZ_clip.setText("Yes!!!")
+            self.lineEdit_hera_measure_XYZ_clip.setStyleSheet ("QLineEdit {background-color:lightcoral}")
+        else:
+            self.lineEdit_hera_measure_XYZ_clip.setText("No")
+            self.lineEdit_hera_measure_XYZ_clip.setStyleSheet ("")
+        if int (measure_all_result.split(",")[4]):
+            self.lineEdit_hera_measure_XYZ_noise.setText("Yes!!!")
+            self.lineEdit_hera_measure_XYZ_noise.setStyleSheet ("QLineEdit {background-color:lightcoral}")
+        else:
+            self.lineEdit_hera_measure_XYZ_noise.setText("No")
+            self.lineEdit_hera_measure_XYZ_noise.setStyleSheet ("")
+
+        self.function_result_to_statusbar (command_py, error_write, "")
+        self.hera_reload_parameters()
+
+
 
     def measure_arparms (self, who_is_calling):
         # Measure Auto-range parameters used in last measurement
