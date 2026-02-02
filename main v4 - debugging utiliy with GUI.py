@@ -15,8 +15,9 @@ import sys
 import ctypes
 
 from time import ctime, sleep
+from numpy import frombuffer, set_printoptions, savetxt
 import numpy
-import base64
+
 
 
 
@@ -58,10 +59,11 @@ class MainUI(QMainWindow):
 
         # Disable inteface
         self.disable_interface_pcm2x()
+        self.disable_interface_hera()
 
-        ##############################
-        #     TAB 1 Signals/Slots    #
-        ##############################
+        ##################################
+        #     TAB PCM2X Signals/Slots    #
+        ##################################
 
         # Connect/Disconnect Button
         self.pushButton_connect.clicked.connect (self.toggle_connect_disconnect_pcm2x)
@@ -135,9 +137,7 @@ class MainUI(QMainWindow):
         self.pushButton_hera_get_wavelengths.clicked.connect (self.hera_get_wavelengths)
         self.pushButton_hera_measure_Yxy.clicked.connect (self.hera_measure_Yxy)
         self.pushButton_hera_measure_XYZ.clicked.connect (self.hera_measure_XYZ)
-        
-
-
+ 
     def handle_focus_changed(self, old_widget, now_widget):
         if self.lineEdit_ar_freq is old_widget:
             try:
@@ -297,7 +297,84 @@ class MainUI(QMainWindow):
         self.comboBox_shutter.blockSignals(False)
 
     def disable_interface_hera (self):
-        pass
+
+        # Clear lineedits
+        self.lineEdit_spectro.clear()
+        self.lineEdit_libusbtmc_version_hera.clear()
+        self.lineEdit_hera_int_time.clear()
+        self.lineEdit_hera_avg.clear()
+        self.lineEdit_hera_adjmin_2.clear()
+        self.lineEdit_hera_freq_2.clear()
+        self.lineEdit_hera_measure_Yxy_clip.clear()
+        self.lineEdit_hera_measure_Yxy_clip.setStyleSheet ("")
+        self.lineEdit_hera_measure_Yxy_noise.clear()
+        self.lineEdit_hera_measure_Yxy_noise.setStyleSheet ("")
+        self.lineEdit_hera_measure_Yxy_Y.clear()
+        self.lineEdit_hera_measure_Yxy_x.clear()
+        self.lineEdit_hera_measure_Yxy_y.clear()
+        self.lineEdit_hera_measure_XYZ_clip.clear()
+        self.lineEdit_hera_measure_XYZ_clip.setStyleSheet ("")
+        self.lineEdit_hera_measure_XYZ_noise.clear()
+        self.lineEdit_hera_measure_XYZ_noise.setStyleSheet ("")
+        self.lineEdit_hera_measure_XYZ_X.clear()
+        self.lineEdit_hera_measure_XYZ_Y.clear()
+        self.lineEdit_hera_measure_XYZ_Z.clear()
+        self.lineEdit_hera_int_time_eeprom.clear()
+        self.lineEdit_hera_avg_eeprom.clear()
+        self.lineEdit_hera_adjmin.clear()
+        self.lineEdit_hera_freq.clear()
+        self.lineEdit_hera_max_int_time.clear()
+
+        # Disable groups of widgets
+        self.widget_hera_00_reload_params.setEnabled (False)
+        self.widget_hera_01_connection.setEnabled (False)
+        self.widget_hera_02_core_params.setEnabled (False)
+        self.widget_hera_03_other_params.setEnabled (False)
+        self.widget_hera_04_measure_all.setEnabled (False)
+        self.widget_hera_05_eeprom_operations.setEnabled (False)
+        self.widget_hera_06_eeprom_parameters.setEnabled (False)
+        self.widget_hera_07_measure_spectrum.setEnabled (False)
+
+        # Clear comboboxes
+        self.comboBox_hera_autorange.blockSignals(True)
+        self.comboBox_hera_autorange.setCurrentIndex(-1)
+        self.comboBox_hera_autorange.blockSignals(True)
+
+        self.comboBox_hera_interp_method.blockSignals(True)
+        self.comboBox_hera_interp_method.setCurrentIndex(-1)
+        self.comboBox_hera_interp_method.blockSignals(True)
+
+        self.comboBox_hera_autorange_eeprom.blockSignals(True)
+        self.comboBox_hera_autorange_eeprom.setCurrentIndex(-1)
+        self.comboBox_hera_autorange_eeprom.blockSignals(True)
+
+        self.comboBox_hera_res_eeprom.blockSignals(True)
+        self.comboBox_hera_res_eeprom.setCurrentIndex(-1)
+        self.comboBox_hera_res_eeprom.blockSignals(True)
+
+        self.comboBox_hera_interp_method_eeprom.blockSignals(True)
+        self.comboBox_hera_interp_method_eeprom.setCurrentIndex(-1)
+        self.comboBox_hera_interp_method_eeprom.blockSignals(True)
+
+        self.comboBox_hera_std_illuminant_eeprom.blockSignals(True)
+        self.comboBox_hera_std_illuminant_eeprom.setCurrentIndex(-1)
+        self.comboBox_hera_std_illuminant_eeprom.blockSignals(True)
+
+        self.comboBox_hera_abs_cal_method_eeprom.blockSignals(True)
+        self.comboBox_hera_abs_cal_method_eeprom.setCurrentIndex(-1)
+        self.comboBox_hera_abs_cal_method_eeprom.blockSignals(True)
+
+        self.comboBox_hera_sbw.blockSignals(True)
+        self.comboBox_hera_sbw.setCurrentIndex(-1)
+        self.comboBox_hera_sbw.blockSignals(True)
+
+        self.comboBox_hera_sbw_write_only.blockSignals(True)
+        self.comboBox_hera_sbw_write_only.setCurrentIndex(-1)
+        self.comboBox_hera_sbw_write_only.blockSignals(True)
+
+        self.comboBox_hera_res_write_only.blockSignals(True)
+        self.comboBox_hera_res_write_only.setCurrentIndex(-1)
+        self.comboBox_hera_res_write_only.blockSignals(True)
     
     def enable_interface_pcm2x (self):
         # Enable groups of widgets
@@ -313,7 +390,15 @@ class MainUI(QMainWindow):
         self.widget_09_eeprom_params.setEnabled (True)
 
     def enable_interface_hera (self):
-        pass
+        # Disable groups of widgets
+        self.widget_hera_00_reload_params.setEnabled (True)
+        self.widget_hera_01_connection.setEnabled (True)
+        self.widget_hera_02_core_params.setEnabled (True)
+        self.widget_hera_03_other_params.setEnabled (True)
+        self.widget_hera_04_measure_all.setEnabled (True)
+        self.widget_hera_05_eeprom_operations.setEnabled (True)
+        self.widget_hera_06_eeprom_parameters.setEnabled (True)
+        # self.widget_hera_07_measure_spectrum.setEnabled (False)   - TO BE DONE
 
     def toggle_connect_disconnect_pcm2x (self):
         if self.pushButton_connect.isChecked():
@@ -334,7 +419,6 @@ class MainUI(QMainWindow):
             self.pushButton_connect_hera.setText ("CONNECT")
             self.pushButton_connect_hera.setStyleSheet ("QPushButton {background-color:lightgreen}")
             self.hera_disconnect()
-
 
     def pcm2x_connect (self):
 
@@ -608,8 +692,7 @@ class MainUI(QMainWindow):
 
         # Load parameters
         self.hera_eeprom_read()
-        
-
+ 
     def pcm2x_disconnect (self):
         # Close device
         error_close = py_usbtmc_close (ptr_handle_colorimeter)
@@ -633,8 +716,7 @@ class MainUI(QMainWindow):
             self.statusbar.showMessage ("Device closed successfully!",10000)
         else:
             self.statusbar.showMessage ("Error closing device! Reboot probe and restart application!")
-        
-
+ 
     def reload_parameters_for_colorimeter_on_click(self):
         self.colorimeter_reload_parameters()
         self.statusbar.showMessage (f"Parameters reloaded successfully at {ctime()[11:20]}",10000)
@@ -1047,10 +1129,7 @@ class MainUI(QMainWindow):
         self.comboBox_sbw.blockSignals(True)
         self.comboBox_hera_sbw.setCurrentIndex (index_comboBox_sbw)
         self.comboBox_sbw.blockSignals(False)
-        
-
-
-
+  
     def function_result_to_statusbar (self, command_sent, error_received, extra_string):
         if not (error_received < 0):
             self.statusbar.showMessage (f"Command -- {command_sent} -- {error_received} bytes succesfully written!" + extra_string, 10000)
@@ -1157,7 +1236,6 @@ class MainUI(QMainWindow):
         error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
         self.function_result_to_statusbar (command_py, error_write, "")
         self.colorimeter_reload_parameters()
-
 
     def colorimeter_write_gain (self):
         # Write to device gain
@@ -1422,12 +1500,16 @@ class MainUI(QMainWindow):
         self.lineEdit_measure_all_Zsat.setText(measure_all_result.split(",")[11])
         if int (measure_all_result.split(",")[12]):
             self.lineEdit_measure_all_clip.setText("Yes!!!")
+            self.lineEdit_measure_all_clip.setStyleSheet ("QLineEdit {background-color:lightcoral}")
         else:
             self.lineEdit_measure_all_clip.setText("No")
-        if int (measure_all_result.split(",")[12]):
+            self.lineEdit_measure_all_clip.setStyleSheet ("")
+        if int (measure_all_result.split(",")[13]):
             self.lineEdit_measure_all_noise.setText("Yes!!!")
+            self.lineEdit_measure_all_noise.setStyleSheet ("QLineEdit {background-color:lightcoral}")
         else:
             self.lineEdit_measure_all_noise.setText("No")
+            self.lineEdit_measure_all_noise.setStyleSheet ("")
 
         self.measure_arparms("from_measure_all")
         self.function_result_to_statusbar (command_py, error_write, "")
@@ -1499,8 +1581,6 @@ class MainUI(QMainWindow):
         self.function_result_to_statusbar (command_py, error_write, "")
         self.hera_reload_parameters()
 
-
-
     def measure_arparms (self, who_is_calling):
         # Measure Auto-range parameters used in last measurement
         command_py = ":MEASure:ARPARMS\n"
@@ -1546,8 +1626,8 @@ class MainUI(QMainWindow):
         print (f"error_write_spectrum is {error_write_spectrum}")
         print (f"error_read_spectrum is {error_read_spectrum}")
          
-        spectrum = numpy.frombuffer (read_data, dtype='>f', count=int (error_read_spectrum/4)) # >f = big-endian (MSB first)
-        numpy.set_printoptions(suppress=True)
+        spectrum = frombuffer (read_data, dtype='>f', count=int (error_read_spectrum/4)) # >f = big-endian (MSB first)
+        set_printoptions(suppress=True)
         print (spectrum[0:])
         print (type(spectrum))
         print("Shape:", spectrum.shape)  
@@ -1555,7 +1635,7 @@ class MainUI(QMainWindow):
         print("Size:", spectrum.size) 
         print("Data type:", spectrum.dtype)  
         print("Item size:", spectrum.itemsize)
-        numpy.savetxt("foo.csv", spectrum, delimiter=",")
+        savetxt("foo.csv", [spectrum], delimiter=",", fmt="%.6f")
 
     def hera_get_wavelengths (self):
         # Measure Hera spectrum

@@ -30,6 +30,7 @@ coduri Hera 0x....
 
 
 functia status de organizat textele
+measure freq pcm2x clip de studiat pt background rosu
 
 
 
