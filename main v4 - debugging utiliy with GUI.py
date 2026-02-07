@@ -19,10 +19,13 @@ from numpy import frombuffer, set_printoptions, savetxt
 import numpy
 import time
 
+# from colorimeter_startup_values_interface import *
+
 
 
 
 class MainUI(QMainWindow):
+    
     def __init__(self):
         super(MainUI, self).__init__()
 
@@ -39,8 +42,9 @@ class MainUI(QMainWindow):
         # Manual toggle button for PCM2X
         font = QtGui.QFont()
         font.setFamily("Arial Narrow")
+        font.setPointSize(8)
         self.pushButton_connect = QtWidgets.QPushButton(self.tab_pcm2x)
-        self.pushButton_connect.setGeometry(QtCore.QRect(58, 13, 77, 19))
+        self.pushButton_connect.setGeometry(QtCore.QRect(45, 13, 77, 19))
         self.pushButton_connect.setFont(font)
         self.pushButton_connect.setObjectName("pushButton_connect")
         self.pushButton_connect.setText(QtCore.QCoreApplication.translate("MainWindow", "CONNECT"))
@@ -51,7 +55,8 @@ class MainUI(QMainWindow):
         font = QtGui.QFont()
         font.setFamily("Arial Narrow")
         self.pushButton_connect_hera = QtWidgets.QPushButton(self.tab_hera)
-        self.pushButton_connect_hera.setGeometry(QtCore.QRect(58, 13, 77, 19))
+        self.pushButton_connect_hera.setGeometry(QtCore.QRect(45, 13, 77, 19))
+        font.setPointSize(8)
         self.pushButton_connect_hera.setFont(font)
         self.pushButton_connect_hera.setObjectName("pushButton_connect")
         self.pushButton_connect_hera.setText(QtCore.QCoreApplication.translate("MainWindow", "CONNECT"))
@@ -71,7 +76,10 @@ class MainUI(QMainWindow):
 
         # Reload Parameters Button
         self.pushButton_reload_params.clicked.connect (self.reload_parameters_for_colorimeter_on_click)
-        
+
+        # Second window - colorimeter startup values
+        self.pushButton_startup_values.clicked.connect (self.open_colorimeter_startup_values_windows)
+                
         # Auto-range parameters input
         self.lineEdit_ar_freq.setValidator (QtGui.QDoubleValidator (0.0, 250.0, 6, notation=QtGui.QDoubleValidator.StandardNotation))
         self.lineEdit_ar_freq.editingFinished.connect (self.colorimeter_write_autorange_params)
@@ -103,10 +111,7 @@ class MainUI(QMainWindow):
         self.lineEdit_ar_freq_two_values.editingFinished.connect (self.colorimeter_write_dut_arfreq)
         self.comboBox_shutter.currentIndexChanged.connect (self.colorimeter_write_shutter_state)
 
-        # EEPROM READ/WRITE + REBOOT
-        self.pushButton_eeprom_write.clicked.connect (self.colorimeter_eeprom_write)
-        self.pushButton_eeprom_read.clicked.connect (self.colorimeter_eeprom_read)
-        self.pushButton_reboot.clicked.connect (self.reboot_device)
+
         
         # Measure buttons
         self.pushButton_measure_dut_freq.clicked.connect (self.measure_dut_freq)
@@ -115,9 +120,7 @@ class MainUI(QMainWindow):
         self.pushButton_measure_arparms.clicked.connect (self.measure_arparms)
 
 
-        # EEPROM Parameters
-        self.lineEdit_eeprom_avg.setValidator (QtGui.QIntValidator(1,255, self))
-        self.lineEdit_eeprom_avg.editingFinished.connect (self.colorimeter_eeprom_write_average)
+
 
 
         ##############################
@@ -216,6 +219,19 @@ class MainUI(QMainWindow):
         self.pushButton_hera_measure_Yxy.clicked.connect (self.hera_measure_Yxy)
         self.pushButton_hera_measure_XYZ.clicked.connect (self.hera_measure_XYZ)
  
+
+    def closeEvent(self, event):
+        QApplication.closeAllWindows()
+        event.accept()
+
+
+    def open_colorimeter_startup_values_windows (self):
+        window2.show()
+        window2.enable_interface_colorimeter_startup_values()
+        window2.colorimeter_reload_parameters_from_eeprom()
+
+    def close_colorimeter_startup_values_windows (self):
+        window2.close()
 
     def handle_focus_changed(self, old_widget, now_widget):
         if self.lineEdit_ar_freq is old_widget:
@@ -378,9 +394,7 @@ class MainUI(QMainWindow):
             except ValueError:
                 self.hera_reload_parameters()
 
-    
-
-
+  
     def disable_interface_pcm2x (self):
         # Clear lineedits
         self.lineEdit_colorimeter.clear()
@@ -422,6 +436,7 @@ class MainUI(QMainWindow):
         self.lineEdit_measure_all_noise.clear()
 
         # # Disable groups of widgets
+        self.widget_00_startup_values.setEnabled (False)
         self.widget_00_reload_params.setEnabled (False)
         self.widget_01_connection.setEnabled (False)
         self.widget_02_ar_params.setEnabled (False)
@@ -430,8 +445,6 @@ class MainUI(QMainWindow):
         self.widget_05_core_params.setEnabled (False)
         self.widget_06_other_params.setEnabled (False)
         self.widget_07_measure_freq.setEnabled (False)
-        self.widget_08_eeprom_operations.setEnabled (False)
-        self.widget_09_eeprom_params.setEnabled (False)
 
         # Clear comboboxes
         self.comboBox_autorange.blockSignals(True)
@@ -453,6 +466,8 @@ class MainUI(QMainWindow):
         self.comboBox_shutter.blockSignals(True)
         self.comboBox_shutter.setCurrentIndex(-1)
         self.comboBox_shutter.blockSignals(False)
+
+               
 
     def disable_interface_hera (self):
 
@@ -546,6 +561,7 @@ class MainUI(QMainWindow):
     
     def enable_interface_pcm2x (self):
         # Enable groups of widgets
+        self.widget_00_startup_values.setEnabled (True)
         self.widget_00_reload_params.setEnabled (True)
         self.widget_01_connection.setEnabled (True)
         self.widget_02_ar_params.setEnabled (True)
@@ -554,8 +570,7 @@ class MainUI(QMainWindow):
         self.widget_05_core_params.setEnabled (True)
         self.widget_06_other_params.setEnabled (True)
         self.widget_07_measure_freq.setEnabled (True)
-        self.widget_08_eeprom_operations.setEnabled (True)
-        self.widget_09_eeprom_params.setEnabled (True)
+
 
     def enable_interface_hera (self):
         # Disable groups of widgets
@@ -589,6 +604,7 @@ class MainUI(QMainWindow):
             self.hera_disconnect()
 
     def pcm2x_connect (self):
+        
 
         # Initialization
         try:
@@ -700,6 +716,10 @@ class MainUI(QMainWindow):
 
         # Enable interface
         self.enable_interface_pcm2x()
+        if window2.isVisible():
+            window2.enable_interface_colorimeter_startup_values()
+        
+        
         self.lineEdit_libusbtmc_version.setText (libusbtmc_version.value.decode("utf-8"))
         
         # Read from device Firmware version
@@ -865,8 +885,9 @@ class MainUI(QMainWindow):
         # Close device
         error_close = py_usbtmc_close (ptr_handle_colorimeter)
         # print (f"Close function error returned = {error_close}")
-
+        
         self.disable_interface_pcm2x()
+        self.close_colorimeter_startup_values_windows()
 
         if error_close == 0:
             self.statusbar.showMessage ("Device closed successfully!",10000)
@@ -957,17 +978,6 @@ class MainUI(QMainWindow):
         avg_read = int (read_data.value.decode("utf-8")[:error_read])
         self.lineEdit_avg.setText (str(avg_read))
 
-        # Read from device Average - EEPROM
-        command_py = ":EEPROM:CONFigure:AVG?\n"
-        buffer_length = len (command_py)
-        timeout_ms = 5000
-        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
-        bytecount = 4096
-        read_data = ctypes.create_string_buffer (bytecount)
-        error_read = py_usbtmc_read (ptr_handle_colorimeter, read_data, bytecount, timeout_ms)
-        avg_read = int (read_data.value.decode("utf-8")[:error_read])
-        self.lineEdit_eeprom_avg.setText (str(avg_read))
-
         # Read from device Gain
         command_py = ":SENSe:GAIN?\n"
         buffer_length = len (command_py)
@@ -991,9 +1001,9 @@ class MainUI(QMainWindow):
         read_data = ctypes.create_string_buffer (bytecount)
         error_read = py_usbtmc_read (ptr_handle_colorimeter, read_data, bytecount, timeout_ms)
         sbw_read = read_data.value.decode("utf-8")[:error_read].strip()
-        # print (f"SBW is -{sbw_read}-")
+        print (f"SBW is -{sbw_read}-")
         index_comboBox_sbw = self.comboBox_sbw.findText (sbw_read)
-        # print (f"Index combo is {index_comboBox_sbw}")
+        print (f"Index combo is {index_comboBox_sbw}")
         self.comboBox_sbw.blockSignals(True)
         self.comboBox_sbw.setCurrentIndex (index_comboBox_sbw)
         self.comboBox_sbw.blockSignals(False)
@@ -1077,6 +1087,16 @@ class MainUI(QMainWindow):
         self.comboBox_shutter.blockSignals(True)
         self.comboBox_shutter.setCurrentIndex (shutter_state_read)
         self.comboBox_shutter.blockSignals(False)
+
+        # Verify if colorimeter startup values window is open
+        check = window2.isVisible()
+        print ("############################")
+        print (f"Window 2 Visible = {check}")
+        print ("############################")
+        if window2.isVisible():
+            window2.colorimeter_reload_parameters_from_eeprom()
+
+
 
     def hera_reload_parameters (self):
         # print ("Hera_reload_parameters launched!")
@@ -1411,17 +1431,7 @@ class MainUI(QMainWindow):
         self.function_result_to_statusbar (command_py, error_write, "")
         self.colorimeter_reload_parameters()
 
-    def colorimeter_eeprom_write_average (self):
-        # Write to device EEPROM - average
-        if (not self.lineEdit_eeprom_avg.isModified()):
-            return
-        self.lineEdit_eeprom_avg.setModified(False)
-        command_py = ":EEPROM:CONFigure:AVG " + self.lineEdit_eeprom_avg.text() + "\n"
-        buffer_length = len (command_py)
-        timeout_ms = 5000
-        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
-        self.function_result_to_statusbar (command_py, error_write, "")
-        self.colorimeter_reload_parameters()
+
 
     def colorimeter_write_gain (self):
         # Write to device gain
@@ -1797,15 +1807,7 @@ class MainUI(QMainWindow):
         self.function_result_to_statusbar (command_py, error_write, autorange_report_on_shutter)
         self.colorimeter_reload_parameters()
 
-    def colorimeter_eeprom_write (self):
-        # :EEPROM:STARTUP:WRITE 
-        command_py = ":EEPROM:STARTUP:WRITE\n"
-        buffer_length = len (command_py)
-        timeout_ms = 5000
-        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
-        self.function_result_to_statusbar (command_py, error_write, " Startup values updated!")
-        sleep (1)
-        self.colorimeter_reload_parameters()
+
 
     def hera_eeprom_write (self):
         # :EEPROM:STARTUP:WRITE 
@@ -1837,31 +1839,7 @@ class MainUI(QMainWindow):
         # sleep (3)
         self.hera_reload_parameters()
 
-    def reboot_device (self):
-        # Reboot device
-        command_py = ":BOOT:REBOOT \n"
-        buffer_length = len (command_py)
-        timeout_ms = 5000
-        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
-        bytecount = 4096
-        read_data = ctypes.create_string_buffer (bytecount)
-        error_read = py_usbtmc_read (ptr_handle_colorimeter, read_data, bytecount, timeout_ms)
-        full_result = read_data.value.decode("utf-8")[:error_read].strip()
-        # print (f"BOOT result is -{full_result}-")
 
-        # Close device
-        error_close = py_usbtmc_close (ptr_handle_colorimeter)
-        # print (f"Close function error returned = {error_close}")
-        if error_close == 0:
-            close_msg = " usbtmc_close report: Device closed!"
-        else:
-            close_msg = " usbtmc_close report: Error closing device!"
-
-        self.pushButton_connect.setChecked (False)
-        self.pushButton_connect.setText ("CONNECT")
-        self.pushButton_connect.setStyleSheet ("QPushButton {background-color:lightgreen}")
-        self.function_result_to_statusbar (command_py, error_write, close_msg + " Wait for the probe to reboot, then press CONNECT!")
-        self.disable_interface_pcm2x()
 
     def measure_dut_freq (self):
         # Measure DUT Freq
@@ -2185,6 +2163,472 @@ class MainUI(QMainWindow):
         print("Data type:", wl.dtype)  
         print("Item size:", wl.itemsize)
 
+
+
+
+
+class SecondUI(QMainWindow):
+    def __init__(self):
+        super(SecondUI, self).__init__()
+
+        # Load interface
+        loadUi ("colorimeter_startup_values_interface.ui", self)
+
+        # Disable interface just in case
+        self.disable_interface_colorimeter_startup_values()
+
+        # EEPROM READ/WRITE + REBOOT
+        self.pushButton_eeprom_write.clicked.connect (self.colorimeter_eeprom_write)
+        self.pushButton_eeprom_read.clicked.connect (self.colorimeter_eeprom_read)
+        self.pushButton_reboot.clicked.connect (self.reboot_device)
+
+        # EEPROM Parameters
+
+        self.comboBox_autorange_eeprom.currentIndexChanged.connect (self.colorimeter_eeprom_write_autorange)
+
+        self.lineEdit_dut_freq_eeprom.setValidator (QtGui.QDoubleValidator (0.0, 250.0, 3, notation=QtGui.QDoubleValidator.StandardNotation))
+        self.lineEdit_dut_freq_eeprom.editingFinished.connect (self.colorimeter_eeprom_write_dut_freq)
+        
+        self.lineEdit_adjmin_eeprom.setValidator (QtGui.QIntValidator(1,30, self))
+        self.lineEdit_adjmin_eeprom.editingFinished.connect (self.colorimeter_eeprom_write_adjmin)
+        
+        self.lineEdit_frames_eeprom.setValidator (QtGui.QIntValidator(1,255, self))
+        self.lineEdit_frames_eeprom.editingFinished.connect (self.colorimeter_eeprom_write_frames)
+
+        self.lineEdit_max_int_time_eeprom.setValidator (QtGui.QIntValidator(320, 1000000, self))
+        self.lineEdit_max_int_time_eeprom.editingFinished.connect (self.colorimeter_eeprom_write_max_int_time)
+
+        self.lineEdit_eeprom_avg.setValidator (QtGui.QIntValidator(1,255, self))
+        self.lineEdit_eeprom_avg.editingFinished.connect (self.colorimeter_eeprom_write_average)
+        
+        self.lineEdit_int_time_eeprom.setValidator (QtGui.QIntValidator(320, 1000000, self))
+        self.lineEdit_int_time_eeprom.editingFinished.connect (self.colorimeter_eeprom_write_int_time)
+
+        self.comboBox_automode_eeprom.currentIndexChanged.connect (self.colorimeter_eeprom_write_automode)
+        
+        self.comboBox_gain_eeprom.currentIndexChanged.connect (self.colorimeter_eeprom_write_gain)
+        
+        self.comboBox_sbw_eeprom.currentIndexChanged.connect (self.colorimeter_eeprom_write_sbw)
+
+        self.comboBox_std_illuminant_eeprom.currentIndexChanged.connect (self.colorimeter_eeprom_write_std_illuminant)
+        
+
+
+        
+
+    def disable_interface_colorimeter_startup_values (self):
+        # Clear lineedits
+        self.lineEdit_dut_freq_eeprom.clear()
+        self.lineEdit_adjmin_eeprom.clear()
+        self.lineEdit_frames_eeprom.clear()
+        self.lineEdit_max_int_time_eeprom.clear()
+        self.lineEdit_eeprom_avg.clear()
+        self.lineEdit_int_time_eeprom.clear()
+
+
+        # # Disable groups of widgets
+        self.widget_08_eeprom_operations.setEnabled (False)
+        self.widget_09_eeprom_params.setEnabled (False)
+
+        # Clear comboboxes
+        self.comboBox_autorange_eeprom.blockSignals(True)
+        self.comboBox_autorange_eeprom.setCurrentIndex(-1)
+        self.comboBox_autorange_eeprom.blockSignals(False)
+
+        self.comboBox_automode_eeprom.blockSignals(True)
+        self.comboBox_automode_eeprom.setCurrentIndex(-1)
+        self.comboBox_automode_eeprom.blockSignals(False)
+
+        self.comboBox_gain_eeprom.blockSignals(True)
+        self.comboBox_gain_eeprom.setCurrentIndex(-1)
+        self.comboBox_gain_eeprom.blockSignals(False)
+
+        self.comboBox_sbw_eeprom.blockSignals(True)
+        self.comboBox_sbw_eeprom.setCurrentIndex(-1)
+        self.comboBox_sbw_eeprom.blockSignals(False)
+
+        self.comboBox_std_illuminant_eeprom.blockSignals(True)
+        self.comboBox_std_illuminant_eeprom.setCurrentIndex(-1)
+        self.comboBox_std_illuminant_eeprom.blockSignals(False)
+
+
+   
+    def enable_interface_colorimeter_startup_values (self):
+        # Enable group of widgets
+        self.widget_08_eeprom_operations.setEnabled (True)
+        self.widget_09_eeprom_params.setEnabled (True)
+    
+
+    def colorimeter_reload_parameters_from_eeprom (self):
+
+        print ("Colorimeter_reload_parameters_from_EEPROM launched!")
+
+        # Read from device Autorange
+        command_py = ":EEPROM:CONFigure:AUTOrange?\n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        bytecount = 4096
+        read_data = ctypes.create_string_buffer (bytecount)
+        error_read = py_usbtmc_read (ptr_handle_colorimeter, read_data, bytecount, timeout_ms)
+
+        ar_read = read_data.value.decode("utf-8")[:error_read].strip()
+        
+        if (ar_read == "Closed") or (ar_read == "Opened"):
+            # Reread Autorange
+            # print ("AUTORANGE: Closed/Opened received")
+            self.colorimeter_reload_parameters_from_eeprom()
+        elif (ar_read == ""):
+            # print ("AUTORANGE: No reply received")
+            return
+        else:
+            # print ("AUTORANGE: " + ar_read)
+            self.comboBox_autorange_eeprom.blockSignals(True)
+            self.comboBox_autorange_eeprom.setCurrentIndex (int(ar_read))
+            self.comboBox_autorange_eeprom.blockSignals(False)
+        
+        # Read from device DUT Autorange Freq
+        command_py = ":EEPROM:CONFigure:AUTO:FREQ?\n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        bytecount = 4096
+        read_data = ctypes.create_string_buffer (bytecount)
+        error_read = py_usbtmc_read (ptr_handle_colorimeter, read_data, bytecount, timeout_ms)
+        dut_freq_read = float (read_data.value.decode("utf-8")[:error_read])
+        print (f"Dut Freq EEPROM is {dut_freq_read}")
+        self.lineEdit_dut_freq_eeprom.setText (f"{dut_freq_read:0.3f}")
+
+        # Read from device Int. Time
+        command_py = ":EEPROM:CONFigure:INT?\n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        bytecount = 4096
+        read_data = ctypes.create_string_buffer (bytecount)
+        error_read = py_usbtmc_read (ptr_handle_colorimeter, read_data, bytecount, timeout_ms)
+        int_time_read = int (read_data.value.decode("utf-8")[:error_read])
+        self.lineEdit_int_time_eeprom.setText (str(int_time_read))
+
+        # Read from device Max. Int. Time
+        command_py = ":EEPROM:CONFigure:AUTO:MAXINT?\n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        bytecount = 4096
+        read_data = ctypes.create_string_buffer (bytecount)
+        error_read = py_usbtmc_read (ptr_handle_colorimeter, read_data, bytecount, timeout_ms)
+        int_time_read = int (read_data.value.decode("utf-8")[:error_read])
+        self.lineEdit_max_int_time_eeprom.setText (str(int_time_read))
+
+        # Read from device Adj min - EEPROM
+        command_py = ":EEPROM:CONFigure:AUTO:ADJMIN?\n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        bytecount = 4096
+        read_data = ctypes.create_string_buffer (bytecount)
+        error_read = py_usbtmc_read (ptr_handle_colorimeter, read_data, bytecount, timeout_ms)
+        adjmin_read = int (read_data.value.decode("utf-8")[:error_read])
+        self.lineEdit_adjmin_eeprom.setText (str(adjmin_read))
+
+        # Read from device Frames - EEPROM
+        command_py = ":EEPROM:CONFigure:AUTO:FRAMES?\n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        bytecount = 4096
+        read_data = ctypes.create_string_buffer (bytecount)
+        error_read = py_usbtmc_read (ptr_handle_colorimeter, read_data, bytecount, timeout_ms)
+        adjmin_read = int (read_data.value.decode("utf-8")[:error_read])
+        self.lineEdit_frames_eeprom.setText (str(adjmin_read))
+
+
+
+ 
+
+        # Read from device Average - EEPROM
+        command_py = ":EEPROM:CONFigure:AVG?\n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        bytecount = 4096
+        read_data = ctypes.create_string_buffer (bytecount)
+        error_read = py_usbtmc_read (ptr_handle_colorimeter, read_data, bytecount, timeout_ms)
+        avg_read = int (read_data.value.decode("utf-8")[:error_read])
+        self.lineEdit_eeprom_avg.setText (str(avg_read))
+
+        # Read from device Gain
+        command_py = ":EEPROM:CONFigure:GAIN?\n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        bytecount = 4096
+        read_data = ctypes.create_string_buffer (bytecount)
+        error_read = py_usbtmc_read (ptr_handle_colorimeter, read_data, bytecount, timeout_ms)
+        gain_read = int (read_data.value.decode("utf-8")[:error_read])
+        print (f"Gain index from EEPROM reload parameters is {gain_read}")
+        self.comboBox_gain_eeprom.blockSignals(True)
+        self.comboBox_gain_eeprom.setCurrentIndex (gain_read-1)
+        self.comboBox_gain_eeprom.blockSignals(False)
+
+        # Read from device Calibration Matrix
+        command_py = ":EEPROM:CONFigure:SBW?\n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        bytecount = 4096
+        read_data = ctypes.create_string_buffer (bytecount)
+        error_read = py_usbtmc_read (ptr_handle_colorimeter, read_data, bytecount, timeout_ms)
+        sbw_read = read_data.value.decode("utf-8")[:error_read].strip()
+        print (f"SBW EEPROM is -{sbw_read}-")
+        index_comboBox_sbw = int (sbw_read)
+        print (f"SBW EEPROM Index combo is {index_comboBox_sbw}")
+        self.comboBox_sbw_eeprom.blockSignals(True)
+        self.comboBox_sbw_eeprom.setCurrentIndex (index_comboBox_sbw)
+        self.comboBox_sbw_eeprom.blockSignals(False)
+
+        # Read from device Automode
+        command_py = ":EEPROM:CONFigure:AUTO:MODE?\n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        bytecount = 4096
+        read_data = ctypes.create_string_buffer (bytecount)
+        error_read = py_usbtmc_read (ptr_handle_colorimeter, read_data, bytecount, timeout_ms)
+        automode_read = int (read_data.value.decode("utf-8")[:error_read])
+        print (f"Automode EEPROM is -{automode_read}-")
+        if automode_read == 255:
+            automode_read = 5
+        self.comboBox_automode_eeprom.blockSignals(True)
+        self.comboBox_automode_eeprom.setCurrentIndex (automode_read)
+        self.comboBox_automode_eeprom.blockSignals(False)
+
+        # Read from device Std. Illuminant
+        command_py = ":EEPROM:CONFigure:WHITE?\n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        bytecount = 4096
+        read_data = ctypes.create_string_buffer (bytecount)
+        error_read = py_usbtmc_read (ptr_handle_colorimeter, read_data, bytecount, timeout_ms)
+        std_illuminant_read = read_data.value.decode("utf-8")[:error_read].strip()
+        print (f"Std. Illuminant EEPROM is -{std_illuminant_read}-")
+
+
+
+        # index_comboBox_sbw = int (sbw_read)
+        # print (f"SBW EEPROM Index combo is {index_comboBox_sbw}")
+        # self.comboBox_sbw_eeprom.blockSignals(True)
+        # self.comboBox_sbw_eeprom.setCurrentIndex (index_comboBox_sbw)
+        # self.comboBox_sbw_eeprom.blockSignals(False)
+
+
+        # Read from device Std. Illuminant - from EEPROM
+        command_py = ":EEPROM:CONFigure:WHITE?\n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        bytecount = 4096
+        read_data = ctypes.create_string_buffer (bytecount)
+        error_read = py_usbtmc_read (ptr_handle_colorimeter, read_data, bytecount, timeout_ms)
+        white_read = read_data.value.decode("utf-8")[:error_read].strip()
+        print (f"EEPROM White Reference is -{white_read}-")
+        index_comboBox_white = self.comboBox_std_illuminant_eeprom.findText (white_read)
+        print (f"EEPROM White Reference Index combo is {index_comboBox_white}")
+        self.comboBox_std_illuminant_eeprom.blockSignals(True)
+        self.comboBox_std_illuminant_eeprom.setCurrentIndex (index_comboBox_white)
+        self.comboBox_std_illuminant_eeprom.blockSignals(False)
+
+
+    def colorimeter_eeprom_write (self):
+        # :EEPROM:STARTUP:WRITE 
+        command_py = ":EEPROM:STARTUP:WRITE\n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        window.function_result_to_statusbar (command_py, error_write, " Startup values updated!")
+        sleep (1)
+        window.colorimeter_reload_parameters()
+        self.colorimeter_reload_parameters_from_eeprom()
+
+    def colorimeter_eeprom_read (self):
+        # :EEPROM:STARTUP:READ 
+        command_py = ":EEPROM:STARTUP:READ\n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        window.function_result_to_statusbar (command_py, error_write, " Startup values copied from EEPROM to internal memory!")
+        # sleep (3)
+        self.colorimeter_reload_parameters_from_eeprom()
+
+    def reboot_device (self):
+        # Reboot device
+        command_py = ":BOOT:REBOOT \n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        bytecount = 4096
+        read_data = ctypes.create_string_buffer (bytecount)
+        error_read = py_usbtmc_read (ptr_handle_colorimeter, read_data, bytecount, timeout_ms)
+        full_result = read_data.value.decode("utf-8")[:error_read].strip()
+        # print (f"BOOT result is -{full_result}-")
+
+        # Close device
+        error_close = py_usbtmc_close (ptr_handle_colorimeter)
+        # print (f"Close function error returned = {error_close}")
+        if error_close == 0:
+            close_msg = " usbtmc_close report: Device closed!"
+        else:
+            close_msg = " usbtmc_close report: Error closing device!"
+
+        window.pushButton_connect.setChecked (False)
+        window.pushButton_connect.setText ("CONNECT")
+        window.pushButton_connect.setStyleSheet ("QPushButton {background-color:lightgreen}")
+        window.function_result_to_statusbar (command_py, error_write, close_msg + " Wait for the probe to reboot, then press CONNECT!")
+        window.disable_interface_pcm2x()
+        self.disable_interface_colorimeter_startup_values()
+
+    def colorimeter_eeprom_write_average (self):
+        # Write to device EEPROM - average
+        if (not self.lineEdit_eeprom_avg.isModified()):
+            return
+        self.lineEdit_eeprom_avg.setModified(False)
+        command_py = ":EEPROM:CONFigure:AVG " + self.lineEdit_eeprom_avg.text() + "\n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        window.function_result_to_statusbar (command_py, error_write, "")
+        window.colorimeter_reload_parameters()
+        self.colorimeter_reload_parameters_from_eeprom()
+
+    def colorimeter_eeprom_write_int_time (self):
+        # Write to device int. time - EEPROM
+        if (not self.lineEdit_int_time_eeprom.isModified()):
+            return
+        self.lineEdit_int_time_eeprom.setModified(False)
+        command_py = ":EEPROM:CONFigure:INT " + self.lineEdit_int_time_eeprom.text() + "\n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        window.function_result_to_statusbar (command_py, error_write, "")
+        window.colorimeter_reload_parameters()
+        self.colorimeter_reload_parameters_from_eeprom()
+
+    def colorimeter_eeprom_write_max_int_time (self):
+        if (not self.lineEdit_max_int_time_eeprom.isModified()):
+            return
+        self.lineEdit_max_int_time_eeprom.setModified(False)
+        command_py = ":EEPROM:CONFigure:AUTO:MAXINT " + self.lineEdit_max_int_time_eeprom.text() + "\n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        window.function_result_to_statusbar (command_py, error_write, "")
+        window.colorimeter_reload_parameters()
+        self.colorimeter_reload_parameters_from_eeprom()
+ 
+    def colorimeter_eeprom_write_frames (self):
+         # Write to device EEPROM - frames
+        if (not self.lineEdit_frames_eeprom.isModified()):
+            return
+        self.lineEdit_frames_eeprom.setModified(False)
+        command_py = ":EEPROM:CONFigure:AUTO:FRAMES " + self.lineEdit_frames_eeprom.text() + "\n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        window.function_result_to_statusbar (command_py, error_write, "")
+        window.colorimeter_reload_parameters()
+        self.colorimeter_reload_parameters_from_eeprom()
+
+    def colorimeter_eeprom_write_dut_freq (self):
+        # Write to device DUT freq - EEPROM
+        if (not self.lineEdit_dut_freq_eeprom.isModified()):
+            return
+        self.lineEdit_dut_freq_eeprom.setModified(False)
+        command_py = ":EEPROM:CONFigure:AUTO:FREQ " + self.lineEdit_dut_freq_eeprom.text() + "\n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        window.function_result_to_statusbar (command_py, error_write, "")
+        window.colorimeter_reload_parameters()
+        self.colorimeter_reload_parameters_from_eeprom()    
+
+    def colorimeter_eeprom_write_adjmin (self):
+        # Write to device EEPROM - adjmin
+        if (not self.lineEdit_adjmin_eeprom.isModified()):
+            return
+        self.lineEdit_adjmin_eeprom.setModified(False)
+        command_py = ":EEPROM:CONFigure:AUTO:ADJMIN " + self.lineEdit_adjmin_eeprom.text() + "\n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        window.function_result_to_statusbar (command_py, error_write, "")
+        window.colorimeter_reload_parameters()
+        self.colorimeter_reload_parameters_from_eeprom()
+
+    def colorimeter_eeprom_write_autorange (self):
+        # Write to device autorange - EEPROM
+        ar_value = self.comboBox_autorange_eeprom.currentIndex()
+        # Catch if we put a placeholder on autorange combobox
+        if ar_value < 0:
+            return
+        command_py = ":EEPROM:CONFigure:AUTOrange " + str (ar_value) + "\n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        window.function_result_to_statusbar (command_py, error_write, "")
+        window.colorimeter_reload_parameters()
+        self.colorimeter_reload_parameters_from_eeprom()
+
+    def colorimeter_eeprom_write_gain (self):
+        # Write to device gain - EEPROM
+        gain_value = self.comboBox_gain_eeprom.currentIndex()
+        command_py = ":EEPROM:CONFigure:GAIN " + str (gain_value + 1) + "\n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        window.function_result_to_statusbar (command_py, error_write, "")
+        window.colorimeter_reload_parameters()
+        self.colorimeter_reload_parameters_from_eeprom()
+
+    def colorimeter_eeprom_write_automode (self):
+        # Write to device automode - EEPROM
+        automode_value = self.comboBox_automode_eeprom.currentIndex()
+        if automode_value == 5:
+            automode_value = 255 # Not Set!
+        command_py = ":EEPROM:CONFigure:AUTO:MODE " + str(automode_value) + "\n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        window.function_result_to_statusbar (command_py, error_write, "")
+        window.colorimeter_reload_parameters()
+        self.colorimeter_reload_parameters_from_eeprom()
+
+    def colorimeter_eeprom_write_sbw (self):
+        # Write to device calibration matrix (sbw) - EEPROM
+        sbw_string = self.comboBox_sbw_eeprom.currentText()
+        index_comboBox_sbw = self.comboBox_sbw_eeprom.findText (sbw_string)
+        command_py = ":EEPROM:CONFigure:SBW " + str (index_comboBox_sbw) + "\n"
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        window.function_result_to_statusbar (command_py, error_write, "")
+        window.colorimeter_reload_parameters()
+        self.colorimeter_reload_parameters_from_eeprom()
+
+    def colorimeter_eeprom_write_std_illuminant (self):
+        # Write to device std illuminant - EEPROM
+        std_illuminant_string = "{:>4}".format(self.comboBox_std_illuminant_eeprom.currentText())
+        command_py = ":EEPROM:CONFigure:WHITE " + std_illuminant_string + "\n"
+        # command_py = ":EEPROM:CONFigure:WHITE FL5\n"
+        print (command_py)
+        buffer_length = len (command_py)
+        timeout_ms = 5000
+        error_write = py_usbtmc_write(ptr_handle_colorimeter, command_py.encode('ASCII'), buffer_length, timeout_ms)
+        window.function_result_to_statusbar (command_py, error_write, "")
+        window.colorimeter_reload_parameters()
+        self.colorimeter_reload_parameters_from_eeprom()
+
 if __name__ == "__main__":
     
     #-------------------------------------------------------------------------------
@@ -2249,5 +2693,8 @@ if __name__ == "__main__":
     
     app = QApplication (sys.argv)
     window = MainUI()
+    window2 = SecondUI()
+    
+    
     window.show()
     app.exec_()

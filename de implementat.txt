@@ -14,11 +14,10 @@ TODO
 ===============
 
 more robust error handling
-sa mearga cu hera+pcm2x
+
 make autorange read more robust, la eroare primeste un mesaj defazat
 
-:EEPROM:STARTUP:WRITE nu pare sa mearga
-resize interface
+
 
 indexerror two_Values
 
@@ -32,19 +31,25 @@ coduri Hera 0x....
 functia status de organizat textele
 measure freq pcm2x clip de studiat pt background rosu
 
-:sens:sp:mode
-sens :cal
+
 
 de verificat daca autorange-ul chiar face ce trebuie
 
 la measure verificat timeout si schimbat sau bagat timeout prefs
 
+de inclus fontul in distributie !!!
+
+reload sa faca si la eeprom reload
+
+max int time din eeprom de verif conditia
 
 
 
 
 INSTRUCTIONS
 ===============
+
+only a/v calib parameters are implemented
 
 Supported devices
 
